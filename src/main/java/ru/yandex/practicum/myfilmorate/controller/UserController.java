@@ -2,54 +2,74 @@ package ru.yandex.practicum.myfilmorate.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.myfilmorate.exceptions.NonFoundException;
-import ru.yandex.practicum.myfilmorate.exceptions.ValidationException;
 import ru.yandex.practicum.myfilmorate.model.User;
+import ru.yandex.practicum.myfilmorate.service.user.UserService;
 
 import javax.validation.Valid;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 
 @RestController
 public class UserController {
 
-    private Long nextId = 1L;
+    private final UserService userService;
+
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
-    private Map<Long, User> users = new HashMap<>();
+
+
+    @GetMapping("/users/{id}")
+    public User getUserById(@PathVariable Long id){
+       return userService.getUserById(id);
+    }
 
     @PostMapping("/users")
-    public User addNewUser(@Valid @RequestBody User user) {
-        if ( user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
-        }
-        Long id = generateId();
-        user.setId(id);
-        users.put(user.getId(), user);
-        return user;
+    public User addNewUser(@Valid
+                           @RequestBody
+                           User user) {
+        return userService.addNewUserInService(user);
     }
 
     @PutMapping("/users")
-    public User updateUser(@Valid @RequestBody User user) {
-        if (!users.containsKey(user.getId())) {
-            throw new NonFoundException("Пользователь не существует");
-        } else {
-            users.put(user.getId(), user);
-        }
-        return user;
+    public User updateUser(@Valid
+                           @RequestBody
+                           User user) {
+        return userService.updateUserInService(user);
     }
 
     @GetMapping("/users")
     public List<User> getUsers() {
-        return new ArrayList<>(users.values());
+        return userService.getUsersInService();
     }
 
-    private Long generateId() {
-        return nextId++;
+    @PutMapping("/users/{id}/friends/{friendId}")
+    public void addFriend(@PathVariable Long id,
+                          @PathVariable Long friendId) {
+        userService.addFriendInService(id, friendId);
     }
+
+    @DeleteMapping("/users/{id}/friends/{friendId}")
+    public void deleteFriend(@PathVariable Long id,
+                             @PathVariable Long friendId) {
+        userService.deleteFriendInService(id, friendId);
+    }
+
+    @GetMapping("/users/{id}/friends/common/{otherId}")
+    public List<User> getMutualFriends(@PathVariable Long id,
+                                       @PathVariable Long otherId) {
+        return userService.getMutualFriendsInService(id, otherId);
+    }
+
+    @GetMapping("/users/{id}/friends")
+    List<User> getFriendList(@PathVariable Long id) {
+        return userService.getFriendListInService(id);
+    }
+
 }
